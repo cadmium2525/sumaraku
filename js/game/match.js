@@ -7,6 +7,7 @@ import { buildFighterDef } from './archetypes.js';
 import { computeRig, drawThumb } from '../doodle/model.js';
 import { STOCKS, TIME_LIMIT } from './constants.js';
 import { sfx } from '../ui/sound.js';
+import { duckBgm } from '../ui/bgm.js';
 
 const STEP = 1 / 60;
 
@@ -118,6 +119,7 @@ export class Match {
 
   setPaused(p) {
     this.paused = p;
+    duckBgm(p);
     this.hud.querySelector('.pause-menu').classList.toggle('hidden', !p);
     this.last = performance.now();
   }
@@ -237,6 +239,7 @@ export class Match {
     this.running = false;
     window.removeEventListener('resize', this.onResize);
     if (this.input) this.input.dispose();
+    duckBgm(false);
     this.renderer.dispose();
     this.container.innerHTML = '';
     this.container.classList.remove('battle');

@@ -92,6 +92,7 @@ js/main.js                画面の切り替えとゲームの流れ
 js/ui/draw.js             ラクガキ画面
 js/ui/preview.js          キャラの 3D プレビュー
 js/ui/sound.js            効果音（WebAudio で合成）
+js/ui/bgm.js              BGM（オリジナル曲を WebAudio でその場で演奏）
 js/doodle/model.js        ラクガキのデータと骨格（肩・股・首・武器の握り）の計算
 js/doodle/builder3d.js    ラクガキ → 3D モデル
 js/doodle/samples.js      サンプルキャラ

@@ -4,6 +4,8 @@ let enabled = true;
 try { enabled = localStorage.getItem('rkg_sound') !== 'off'; } catch (e) { /* ignore */ }
 
 export function soundOn() { return enabled; }
+/** BGM から使う AudioContext（まだ起きていなければ null） */
+export function audioCtx() { return ctx; }
 export function setSound(on) {
   enabled = on;
   try { localStorage.setItem('rkg_sound', on ? 'on' : 'off'); } catch (e) { /* ignore */ }

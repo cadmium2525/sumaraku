@@ -6,6 +6,7 @@ import { Match, defFromChar, escapeHtml } from './game/match.js';
 import { TYPES, TYPE_KEYS, MOVE_SLOTS } from './game/archetypes.js';
 import { drawThumb } from './doodle/model.js';
 import { unlockAudio, sfx, soundOn, setSound } from './ui/sound.js';
+import { playBgm, bgmOn, setBgm, jingle } from './ui/bgm.js';
 
 const app = document.getElementById('app');
 let store;
@@ -15,6 +16,8 @@ function setScreen(html, cls = '') {
   if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
   app.className = cls;
   app.innerHTML = html;
+  // 画面ごとの BGM（結果画面はジングルを鳴らすので止める）
+  playBgm(cls === 'screen-draw' ? 'draw' : cls === 'screen-battle' ? 'battle' : cls === 'screen-result' ? null : 'menu');
   window.scrollTo(0, 0);
 }
 const $ = (sel, el = app) => el.querySelector(sel);
@@ -72,13 +75,15 @@ async function title() {
       </div>
       <div class="title-foot">
         <button class="link name-btn">なまえ：<b>${esc(store.user.name || 'ななし')}</b> ✎</button>
-        <button class="link sound-btn">${soundOn() ? '🔊 音あり' : '🔇 音なし'}</button>
+        <button class="link sound-btn">${soundOn() ? '🔊 効果音あり' : '🔇 効果音なし'}</button>
+        <button class="link bgm-btn">${bgmOn() ? '🎵 BGMあり' : '🔇 BGMなし'}</button>
         <span class="net ${store.online ? 'on' : ''}">${store.online ? 'オンライン' : 'オフライン（この端末だけ）'}</span>
       </div>
     </div>`, 'screen-title');
   for (const b of $$('[data-go]')) b.onclick = () => { unlockAudio(); sfx('ui'); go(b.dataset.go); };
   $('.name-btn').onclick = async () => { await askName(true); title(); };
   $('.sound-btn').onclick = () => { setSound(!soundOn()); unlockAudio(); title(); };
+  $('.bgm-btn').onclick = () => { unlockAudio(); setBgm(!bgmOn()); title(); };
 }
 
 async function askName(force = false) {
@@ -395,6 +400,7 @@ function result(res, ctx) {
       <button class="btn to-title">タイトルへ</button>
     </div>`, 'screen-result');
   thumbs();
+  setTimeout(() => jingle(win ? 'win' : 'lose'), 150);
   $('.again').onclick = () => (ctx.mode === 'auto' ? autoSetup(me) : startMatch({ chars: [me, opp], mode: 'cpu', level: ctx.level }, (r) => result(r, ctx)));
   $('.to-title').onclick = title;
 }
@@ -422,6 +428,11 @@ async function ranking() {
   store = await createStore();
   title();
 })();
+
+// スマホは画面にさわるまで音を出せないので、最初のタッチで音を起こす（BGM がはじまる）
+const wake = () => { unlockAudio(); window.removeEventListener('pointerdown', wake); window.removeEventListener('keydown', wake); };
+window.addEventListener('pointerdown', wake);
+window.addEventListener('keydown', wake);
 
 // iOS のダブルタップ拡大などを抑止
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
