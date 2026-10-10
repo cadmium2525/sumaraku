@@ -3,7 +3,7 @@
 // 体のパーツは関節（首・肩・股）ごとにグループ化して、アニメーションで動かせるようにする。
 import * as THREE from 'three';
 import { mergeGeometries } from '../../lib/BufferGeometryUtils.js';
-import { computeRig, isClosed, insidePoly, fillColor, simplifyStroke, PARTS } from './model.js';
+import { computeRig, isClosed, isFill, insidePoly, distToPoly, fillColor, simplifyStroke, PARTS } from './model.js';
 
 let gradientMap = null;
 
@@ -39,43 +39,57 @@ function buildStrokes(strokes, origin, s, part, mats) {
   const bevel = depth * 0.35;
   const fills = [];
 
-  // 塗り（閉じた形）
-  for (const st of strokes) {
-    if (!st.f || !isClosed(st)) continue;
-    const p = simplifyStroke(st.p, 6);
-    if (p.length < 8) continue;
+  const extrude = (outer, holes, color) => {
     const shape = new THREE.Shape();
-    for (let i = 0; i < p.length; i += 2) {
-      const [x, y] = W(p[i], p[i + 1]);
+    for (let i = 0; i < outer.length; i += 2) {
+      const [x, y] = W(outer[i], outer[i + 1]);
       if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
     }
     shape.closePath();
+    for (const h of holes) {
+      const path = new THREE.Path();
+      for (let i = 0; i < h.length; i += 2) {
+        const [x, y] = W(h[i], h[i + 1]);
+        if (i === 0) path.moveTo(x, y); else path.lineTo(x, y);
+      }
+      path.closePath();
+      shape.holes.push(path);
+    }
     try {
       const g = new THREE.ExtrudeGeometry(shape, {
-        depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: Math.min(0.025, depth * 0.2), bevelSegments: 2, curveSegments: 2,
+        depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: Math.min(0.02, depth * 0.15), bevelSegments: 2, curveSegments: 2,
       });
       g.translate(0, 0, -depth / 2);
       g.deleteAttribute('uv');
-      add(fillColor(st.c), g);
-      fills.push({ st, poly: p });
+      add(color, g);
+      return true;
     } catch (e) {
-      // 自己交差などで三角形分割に失敗したら塗りなし
+      return false; // 自己交差などで三角形分割に失敗したら塗りなし
     }
+  };
+
+  // バケツの塗り
+  for (const st of strokes) {
+    if (!isFill(st) || st.p.length < 6) continue;
+    if (extrude(st.p, st.h || [], st.c)) fills.push({ poly: st.p, holes: st.h || [] });
+  }
+  // 旧データ：閉じた線の自動ぬり
+  for (const st of strokes) {
+    if (isFill(st) || !st.f || !isClosed(st)) continue;
+    const p = simplifyStroke(st.p, 6);
+    if (p.length < 8) continue;
+    if (extrude(p, [], fillColor(st.c))) fills.push({ poly: p, holes: [] });
   }
 
   // 線（チューブ）
+  const front = depth / 2 + bevel;
   for (const st of strokes) {
+    if (isFill(st)) continue;
     const p = simplifyStroke(st.p, 5);
     const r = Math.max(0.014, st.w * s * 0.5);
-    // 塗りの内側に描いた線（顔など）は表面に出す
-    let z = 0;
+    // 塗りのふち・内側の線（輪郭や顔）は塗りの表面に出す。塗りに埋もれないように
     const n = p.length / 2;
-    let cx = 0, cy = 0;
-    for (let i = 0; i < p.length; i += 2) { cx += p[i]; cy += p[i + 1]; }
-    cx /= n; cy /= n;
-    for (const f of fills) {
-      if (f.st !== st && insidePoly(cx, cy, f.poly)) { z = depth / 2 + bevel + r * 0.3; break; }
-    }
+    const z = fills.some((f) => onFill(p, st.w, f)) ? front : 0;
     if (n < 2 || pathLen(p) < 3) {
       const [x, y] = W(p[0], p[1]);
       const g = new THREE.SphereGeometry(r * 1.1, 8, 6);
@@ -113,6 +127,19 @@ function buildStrokes(strokes, origin, s, part, mats) {
     group.add(mesh);
   }
   return group;
+}
+
+/** 線の半分以上が、塗りの内側かふちの近くにあるか */
+function onFill(p, w, f) {
+  let n = 0, hit = 0;
+  for (let i = 0; i < p.length; i += 2) {
+    n++;
+    const x = p[i], y = p[i + 1];
+    const inHole = f.holes.some((h) => insidePoly(x, y, h) && distToPoly(x, y, h) > w / 2 + 6);
+    if (inHole) continue;
+    if (insidePoly(x, y, f.poly) || distToPoly(x, y, f.poly) <= w / 2 + 10) hit++;
+  }
+  return hit >= n * 0.5;
 }
 
 function pathLen(p) {

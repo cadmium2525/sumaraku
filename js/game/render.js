@@ -395,23 +395,26 @@ export class Renderer {
     if (!pts.length) pts.push([0, 2]);
     let x1 = Infinity, x2 = -Infinity, y1 = Infinity, y2 = -Infinity;
     for (const [x, y] of pts) { x1 = Math.min(x1, x); x2 = Math.max(x2, x); y1 = Math.min(y1, y); y2 = Math.max(y2, y); }
-    // ステージが見えるように少し含める
-    x1 = Math.min(x1, -4); x2 = Math.max(x2, 4); y1 = Math.min(y1, -1); y2 = Math.max(y2, 3);
     const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
-    // 下に HUD があるので少し上に余白をとる
-    const needW = x2 - x1 + 4, needH = y2 - y1 + 5;
+    // 2人が近いときはぐっと寄る。キャラ1人ぶんの余白をとる
+    const needW = Math.max(6.5, x2 - x1 + 5), needH = Math.max(4.6, y2 - y1 + 4.2);
     const tan = Math.tan((this.camera.fov * Math.PI) / 360);
-    let d = Math.max(needH / (2 * tan), needW / (2 * tan * this.camera.aspect));
-    d = Math.max(12, Math.min(48, d));
+    // 注視点を中心より LOOK だけ下げる（HUD を避ける）ぶん、上側が切れないように距離をとる
+    const LOOK = 0.07;
+    let d = Math.max(needH / (2 * (tan - LOOK)), needW / (2 * tan * this.camera.aspect));
+    d = Math.max(7.5, Math.min(48, d));
+    // ズームインはゆっくり、ズームアウトは速く（ふっとんだ相手を見失わないように）
     const k = 1 - Math.pow(0.04, dt);
+    const kz = 1 - Math.pow(d > this.camPos.z ? 0.02 : 0.12, dt);
     this.camPos.x += (cx - this.camPos.x) * k;
     this.camPos.y += (cy - this.camPos.y) * k;
-    this.camPos.z += (d - this.camPos.z) * k;
+    this.camPos.z += (d - this.camPos.z) * kz;
     // 少し上から見下ろす。注視点を下げるとキャラが画面の上寄りになり HUD とかぶらない
-    this.camLook.set(this.camPos.x, this.camPos.y - 1.4 - d * 0.03, 0);
+    const z = this.camPos.z;
+    this.camLook.set(this.camPos.x, this.camPos.y - z * LOOK, 0);
     const s = this.shake;
     this.shake = Math.max(0, this.shake - dt * 2.5);
-    this.camera.position.set(this.camPos.x + (Math.random() - 0.5) * s, this.camPos.y + 0.6 + (Math.random() - 0.5) * s, this.camPos.z);
+    this.camera.position.set(this.camPos.x + (Math.random() - 0.5) * s, this.camPos.y + z * 0.04 + (Math.random() - 0.5) * s, this.camPos.z);
     this.camera.lookAt(this.camLook);
   }
 

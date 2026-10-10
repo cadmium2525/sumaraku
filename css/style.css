@@ -232,3 +232,6 @@ h2 { font-family: var(--hand); font-weight: 400; margin: 8px 0; }
   .btn-big { padding: 10px 16px; }
 }
 .step span { white-space: nowrap; font-size: 13px; }
+.tool:disabled { opacity: .35; }
+.hint-flash { color: var(--accent); }
+.tool-row + .tool-row { margin-top: 6px; }
