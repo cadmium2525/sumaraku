@@ -81,11 +81,11 @@ function lightMoves(r) {
     ]),
     nspec: r.pick([
       mv({ name: 'れんだラッシュ', anim: 'rush', total: 52, hb: [...multi(5, 29, 4, 0.5, 0.55, 0.32, 1.2, 361, 12, 8), hb(34, 36, 0.55, 0.55, 0.36, 5, 361, 55, 110, { g: 20 })] }),
-      mv({ name: 'ダッシュストレート', anim: 'dashpunch', total: 46, mv: [{ f0: 8, f1: 20, vx: 0.26 }], hb: [hb(10, 20, 0.5, 0.55, 0.32, 11, 40, 50, 78)] }),
+      mv({ name: 'ダッシュストレート', anim: 'dashpunch', total: 46, mv: [{ f0: 8, f1: 18, vx: 0.2 }], hb: [hb(10, 18, 0.5, 0.55, 0.32, 11, 40, 50, 78)] }),
     ]),
     sspec: r.pick([
-      mv({ name: 'とびげり', anim: 'divekick', total: 40, mv: [{ f0: 6, f1: 22, vx: 0.32, vy: 0.03 }], hb: [hb(8, 22, 0.45, 0.4, 0.3, 9, 45, 50, 70)] }),
-      mv({ name: 'かかとおとし', anim: 'axekick', total: 44, mv: [{ f0: 4, f1: 12, vx: 0.18, vy: 0.08 }], hb: [hb(14, 17, 0.5, 0.55, 0.33, 12, 280, 30, 70)] }),
+      mv({ name: 'とびげり', anim: 'divekick', total: 40, mv: [{ f0: 6, f1: 20, vx: 0.19, vy: 0.03 }], hb: [hb(8, 20, 0.45, 0.4, 0.3, 9, 45, 50, 70)] }),
+      mv({ name: 'かかとおとし', anim: 'axekick', total: 44, mv: [{ f0: 4, f1: 12, vx: 0.13, vy: 0.08 }], hb: [hb(14, 17, 0.5, 0.55, 0.33, 12, 280, 30, 70)] }),
     ]),
     uspec: r.pick([
       mv({ name: 'しょうりゅうけん', anim: 'uppercut', total: 50, helpless: true, steer: 0.05, mv: [{ f0: 3, f1: 20, vy: 0.36 }], hb: [hb(3, 5, 0.3, 0.6, 0.32, 10, 80, 60, 80), hb(6, 16, 0.2, 0.9, 0.26, 4, 80, 30, 60, { g: 0 })] }),
@@ -93,7 +93,7 @@ function lightMoves(r) {
     ]),
     dspec: r.pick([
       mv({ name: 'カウンター', anim: 'counter', total: 50, counter: [5, 28] }),
-      mv({ name: 'きゅうこうかキック', anim: 'divekick', total: 44, landCancel: true, mv: [{ f0: 1, f1: 7, vy: 0.12 }, { f0: 8, f1: 32, vx: 0.28, vy: -0.36 }], hb: [hb(8, 32, 0.3, 0.05, 0.3, 10, 40, 45, 80)] }),
+      mv({ name: 'きゅうこうかキック', anim: 'divekick', total: 44, landCancel: true, mv: [{ f0: 1, f1: 7, vy: 0.12 }, { f0: 8, f1: 32, vx: 0.2, vy: -0.36 }], hb: [hb(8, 32, 0.3, 0.05, 0.3, 10, 40, 45, 80)] }),
     ]),
   };
 }
@@ -125,7 +125,7 @@ function heavyMoves(r) {
       mv({ name: 'ばくれつずつき', anim: 'headbutt', total: 56, armor: [5, 20], hb: [hb(20, 23, 0.55, 0.75, 0.42, 18, 361, 40, 86)] }),
     ]),
     sspec: r.pick([
-      mv({ name: 'ショルダータックル', anim: 'tackle', total: 48, armor: [6, 26], mv: [{ f0: 10, f1: 26, vx: 0.3 }], hb: [hb(10, 26, 0.5, 0.5, 0.4, 13, 45, 60, 80)] }),
+      mv({ name: 'ショルダータックル', anim: 'tackle', total: 48, armor: [6, 26], mv: [{ f0: 10, f1: 22, vx: 0.2 }], hb: [hb(10, 22, 0.5, 0.5, 0.4, 13, 45, 60, 80)] }),
       mv({ name: 'ぶんまわし', anim: 'lariat', total: 52, mv: [{ f0: 8, f1: 38, vx: 0.08 }], hb: [...multi(8, 33, 5, 0, 0.55, 0.62, 2.5, 361, 20, 15), hb(38, 40, 0, 0.55, 0.66, 7, 361, 55, 100, { g: 20 })] }),
     ]),
     uspec: mv({ name: 'ジャンプスラム', anim: 'uppunch', total: 48, helpless: true, steer: 0.05, mv: [{ f0: 4, f1: 18, vy: 0.36 }], hb: [hb(4, 10, 0.2, 0.85, 0.42, 9, 85, 60, 65)] }),
@@ -139,7 +139,7 @@ function shooterMoves(r) {
   const base = lightMoves(r);
   // 通常技は少し弱め
   for (const k of ['jab', 'ftilt', 'utilt', 'dtilt', 'dash', 'fsmash', 'usmash', 'dsmash', 'nair', 'fair', 'bair', 'uair', 'dair']) {
-    base[k] = { ...base[k], hb: base[k].hb.map((h) => ({ ...h, dmg: +(h.dmg * 0.88).toFixed(1) })) };
+    base[k] = { ...base[k], hb: base[k].hb.map((h) => ({ ...h, dmg: +(h.dmg * 1.0).toFixed(1) })) };
   }
   base.fsmash = mv({ name: 'ゼロきょりバースト', anim: 'shoot', total: 52, charge: { at: 9, max: 60 }, hb: [hb(15, 17, 0.7, 0.55, 0.36, 15, 361, 30, 100)] });
   return {
@@ -186,7 +186,7 @@ function weaponMoves(r, R) {
       mv({ name: 'ブーメラン', anim: 'boomerang', total: 40, proj: [{ f: 12, kind: 'boomerang', x: 0.6, y: 0.6, vx: 0.38, r: 0.3, dmg: 7, ang: 45, bkb: 40, kbg: 50, life: 130 }] }),
       mv({ name: 'ためぎり', anim: 'bigslash', total: 40, charge: { at: 8, max: 120, mult: 1.6, btn: 'b' }, hb: sw(14, 17, 0.55, 10, 361, 40, 88) }),
     ]),
-    sspec: mv({ name: 'とっしんづき', anim: 'lunge', total: 46, mv: [{ f0: 10, f1: 22, vx: 0.4 }], hb: sw(10, 22, 0.5, 12, 40, 55, 75) }),
+    sspec: mv({ name: 'とっしんづき', anim: 'lunge', total: 46, mv: [{ f0: 10, f1: 20, vx: 0.24 }], hb: sw(10, 20, 0.5, 12, 40, 55, 75) }),
     uspec: mv({ name: 'しょうてんぎり', anim: 'spinslash', total: 50, helpless: true, steer: 0.06, mv: [{ f0: 4, f1: 22, vy: 0.34 }], hb: [...multi(4, 16, 4, 0, 0.7, 0.4 + 0.25 * R, 2, 90, 30, 10), hb(20, 22, 0, 0.8, 0.5 + 0.25 * R, 5, 60, 55, 100, { g: 20 })] }),
     dspec: r.pick([
       mv({ name: 'カウンター', anim: 'counter', total: 52, counter: [6, 28] }),
@@ -197,7 +197,7 @@ function weaponMoves(r, R) {
 }
 
 const TYPE_POWER = { light: 0.95, heavy: 1.25, shooter: 0.9, weapon: 1.0 };
-const DMG_MULT = { light: 1.08, heavy: 0.76, shooter: 1.2, weapon: 1.02 };
+const DMG_MULT = { light: 1.15, heavy: 0.78, shooter: 1.45, weapon: 0.88 };
 
 /** ラクガキの type/seed から対戦用キャラ定義を作る */
 export function buildFighterDef({ type, seed, reach = 1, widthRatio = 0.5, name = '???' }) {

@@ -156,7 +156,7 @@ export class Sim {
     t.hitlag = hl;
     if (!isProj) a.hitlag = hl;
     if (kb > 30 && h.dmg >= 2 && !t.grounded) t.facing = -Math.sign(t.kbx) || t.facing;
-    this.emit({ t: 'hit', x: (t.x + (h.wx ?? t.x)) / 2, y: h.wy ?? t.y + t.h / 2, dmg: h.dmg, kb, slot: t.slot, by: a.slot });
+    this.emit({ t: 'hit', x: (t.x + (h.wx ?? t.x)) / 2, y: h.wy ?? t.y + t.h / 2, dmg: h.dmg, kb, slot: t.slot, by: a.slot, proj: isProj });
     return 'hit';
   }
 

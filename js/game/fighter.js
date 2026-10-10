@@ -399,8 +399,11 @@ export class Fighter {
       }
     }
     if (m.steer && !this.grounded) this.vx += clamp(inp.x * 0.16 - this.vx, -m.steer * 0.4, m.steer * 0.4);
+    // 移動の区間が終わったら勢いを止める（止めないと技の終わりまで滑り続ける）
+    const moving = m.mv && m.mv.some((p) => p.vx !== undefined && this.mf >= p.f0 && this.mf <= p.f1);
     if (m.slide && this.grounded) this.vx *= m.slide;
-    else if (this.grounded && !m.mv) this.vx *= 0.82;
+    else if (!moving && this.grounded) this.vx *= 0.75;
+    else if (!moving && m.mv && m.mv.some((p) => p.vx !== undefined && this.mf > p.f1)) this.vx *= 0.88;
 
     // 飛び道具
     if (m.proj) for (const p of m.proj) if (p.f === this.mf) this.sim.spawnProjectile(this, p, m.charge ? this.charge / m.charge.max : 0);

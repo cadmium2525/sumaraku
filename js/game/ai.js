@@ -59,6 +59,8 @@ export class AI {
     this.mistake = 0.4 - 0.37 * t;
     this.defend = 0.1 + 0.55 * t;
     this.tech = 0.1 + 0.7 * t;
+    this.evade = 0.35 + 0.6 * t; // 飛び道具をよける確率
+    this.rushUntil = 0;
     this.p = PERSONA[fighter.def.type] || PERSONA.light;
     this.nextShot = 0;
   }
@@ -110,6 +112,12 @@ export class AI {
     const M = STAGE.main;
     if (f.grounded) return false;
     return f.x < M.x1 - 0.1 || f.x > M.x2 + 0.1 || f.y < M.top - 0.2;
+  }
+
+  /** 相手が飛び道具を持っているか */
+  oppShoots() {
+    if (this._oppShoots === undefined) this._oppShoots = this.o.def.type === 'shooter';
+    return this._oppShoots;
   }
 
   // ---- 復帰 ----
@@ -205,33 +213,83 @@ export class AI {
   }
 
   // ---- 防御 ----
+  /** こちらに向かってくる飛び道具のうち、いちばん早く当たるもの（フレーム数） */
+  incomingProjectile() {
+    const f = this.f, o = this.o;
+    let best = null;
+    const cy = f.y + f.h / 2;
+    for (const p of this.sim.projectiles) {
+      if (p.owner === f) continue;
+      const dx = f.x - p.x;
+      const vx = p.vx || 0;
+      if (p.kind === 'mine') continue;
+      if (Math.abs(dx) > 7 || Math.abs(cy - p.y) > f.h * 0.8 + p.r) continue;
+      if (Math.abs(vx) < 0.02 || Math.sign(vx) !== Math.sign(dx)) { if (Math.abs(dx) > 1.2) continue; }
+      const t = Math.abs(dx) / Math.max(0.05, Math.abs(vx));
+      if (!best || t < best.t) best = { t, p };
+    }
+    // 撃つ直前の相手も「もうすぐ飛んでくる」として扱う
+    if (o.state === 'attack' && o.move && o.move.proj) {
+      const first = o.move.proj[0].f;
+      const rel = (f.x - o.x) * o.facing;
+      if (o.mf < first && rel > 0 && Math.abs(f.y - o.y) < 1.5) {
+        const t = first - o.mf + rel / Math.max(0.15, Math.abs(o.move.proj[0].vx || 0.3));
+        if (!best || t < best.t) best = { t, p: null };
+      }
+    }
+    return best;
+  }
+
+  /** 飛び道具をよけて、撃ってくる相手に近づく */
+  evadeProjectile() {
+    const f = this.f, o = this.o, r = this.rng;
+    const inc = this.incomingProjectile();
+    if (!inc || inc.t > 28) return false;
+    if (!r.chance(this.evade)) return false;
+    const toward = Math.sign(o.x - f.x) || 1;
+    // 撃たれたら一気に間合いをつめる
+    this.rushUntil = this.sim.frame + 120;
+    const t = inc.t;
+    const nearEdge = Math.abs(f.x + toward * 2.2) > 6.6;
+    if (!f.grounded) {
+      if (t < 7 && !f.airdodged) { this.push(1, { s: true, x: toward, y: 0.3 }); this.push(1, { x: toward }); return true; }
+      return false;
+    }
+    const c = r.next();
+    if (t >= 6 && c < 0.55) {
+      // 大ジャンプで跳びこえて、空中攻撃で降りる
+      this.push(5, { x: toward, j: true });
+      this.push(10, { x: toward });
+      if (Math.abs(o.x - f.x) < 4.5) this.press('a', { x: toward }, 2);
+      return true;
+    }
+    if (t >= 3 && t <= 14 && c < 0.8 && !nearEdge) {
+      // 前回避で弾をすり抜ける
+      this.push(1, { s: true }); this.push(2, { s: true, x: toward, smash: true }); this.push(1, {});
+      return true;
+    }
+    if (t <= 5) {
+      // ギリギリならジャストシールドをねらう
+      this.push(r.int(4, 8), { s: true }); this.push(1, {});
+      return true;
+    }
+    return false;
+  }
+
   tryDefend() {
     const f = this.f, o = this.o, r = this.rng;
+    if (this.evadeProjectile()) return true;
     if (!f.grounded) {
       return false;
     }
-    let threat = false, projThreat = false;
-    if (o.state === 'attack' && o.move) {
+    let threat = false;
+    if (o.state === 'attack' && o.move && !o.move.proj) {
       const R = analyzeMovesCached(o);
       const re = R[o.move.key];
       if (re && o.mf < re.first + 2) {
         const rel = (f.x - o.x) * o.facing;
         if (rel > re.x1 - 0.8 && rel < re.x2 + 0.8 && f.y - o.y < re.y2 + 0.5 && f.y + f.h - o.y > re.y1 - 0.5) threat = true;
-        if (re.proj && Math.abs(f.y - o.y) < 1.5 && rel > 0) threat = true;
       }
-    }
-    for (const p of this.sim.projectiles) {
-      if (p.owner === f) continue;
-      const dx = f.x - p.x;
-      if (Math.abs(dx) < 3.5 && Math.sign(dx) === Math.sign(p.vx || dx) && Math.abs(f.y + f.h / 2 - p.y) < 1.3) projThreat = true;
-    }
-    // 飛び道具は跳びこえて近づく（ガードばかりだと射撃型に削られ続ける）
-    if (projThreat && !threat) {
-      if (!r.chance(this.defend)) return false;
-      const toward = Math.sign(o.x - f.x) || 1;
-      if (r.chance(0.6)) { this.push(1, { x: toward, j: true }); this.push(10, { x: toward, j: true }); this.push(1, { x: toward }); return true; }
-      if (f.shield > 20) { this.push(r.int(8, 14), { s: true }); this.push(1, {}); return true; }
-      return false;
     }
     if (!threat || !r.chance(this.defend)) return false;
     const c = r.next();
@@ -261,6 +319,8 @@ export class AI {
       const R = this.reach[k];
       if (!R) continue;
       if (R.counter || R.reflect) continue;
+      // 飛び道具は撃ちっぱなしにしない（間をあける）
+      if (R.proj && this.sim.frame < this.nextShot) continue;
       if (k === 'sspec' && !f.grounded && f.usedSideB) continue;
       const s = Math.min(R.first, 30);
       const px = o.x + (o.vx + o.kbx) * s * 0.8;
@@ -323,6 +383,7 @@ export class AI {
       return false;
     }
     if (r.chance(this.mistake * 0.4)) return false;
+    if (best.R.proj) this.nextShot = this.sim.frame + r.int(60, 120);
     this.execute(best);
     return true;
   }
@@ -392,6 +453,19 @@ export class AI {
       this.nextShot = this.sim.frame + r.int(70, 130);
       const key = r.chance(0.6) ? 'nspec' : 'sspec';
       if (this.reach[key]) { this.execute({ k: key, face: toward }); return; }
+    }
+    // 撃ってくる相手には、跳びながら一気に近づく（遠くで立ち止まると撃たれ続ける）
+    const zoner = this.f.def.type !== 'shooter' && this.oppShoots();
+    if ((this.rushUntil > this.sim.frame || zoner) && adx > 2.2) {
+      if (adx > 3.2 && r.chance(0.35)) {
+        this.push(5, { x: toward, j: true });
+        this.push(8, { x: toward });
+        if (adx < 5.5) this.press('a', { x: toward }, 2);
+        return;
+      }
+      let rx = toward;
+      if (Math.abs(f.x + rx * 1.4) > M.x2 - 0.6 && Math.sign(rx) === Math.sign(f.x)) rx = 0;
+      return this.idle(Math.min(n, 6), { x: rx });
     }
     let x;
     if (adx > want + 0.4) x = toward * (adx > want + 2.5 ? 1 : 0.6);
