@@ -60,7 +60,7 @@ export class AI {
     this.defend = 0.1 + 0.55 * t;
     this.tech = 0.1 + 0.7 * t;
     this.p = PERSONA[fighter.def.type] || PERSONA.light;
-    this.lastShot = -999;
+    this.nextShot = 0;
   }
 
   get o() { return this.sim.fighters[1 - this.f.slot]; }
@@ -210,7 +210,7 @@ export class AI {
     if (!f.grounded) {
       return false;
     }
-    let threat = false;
+    let threat = false, projThreat = false;
     if (o.state === 'attack' && o.move) {
       const R = analyzeMovesCached(o);
       const re = R[o.move.key];
@@ -223,7 +223,15 @@ export class AI {
     for (const p of this.sim.projectiles) {
       if (p.owner === f) continue;
       const dx = f.x - p.x;
-      if (Math.abs(dx) < 3.5 && Math.sign(dx) === Math.sign(p.vx || dx) && Math.abs(f.y + f.h / 2 - p.y) < 1.3) threat = true;
+      if (Math.abs(dx) < 3.5 && Math.sign(dx) === Math.sign(p.vx || dx) && Math.abs(f.y + f.h / 2 - p.y) < 1.3) projThreat = true;
+    }
+    // 飛び道具は跳びこえて近づく（ガードばかりだと射撃型に削られ続ける）
+    if (projThreat && !threat) {
+      if (!r.chance(this.defend)) return false;
+      const toward = Math.sign(o.x - f.x) || 1;
+      if (r.chance(0.6)) { this.push(1, { x: toward, j: true }); this.push(10, { x: toward, j: true }); this.push(1, { x: toward }); return true; }
+      if (f.shield > 20) { this.push(r.int(8, 14), { s: true }); this.push(1, {}); return true; }
+      return false;
     }
     if (!threat || !r.chance(this.defend)) return false;
     const c = r.next();
@@ -380,8 +388,8 @@ export class AI {
 
     // 射撃型：距離をとって撃つ
     const want = this.p.dist;
-    if (this.f.def.type === 'shooter' && this.sim.frame - this.lastShot > 50 && Math.abs(dy) < 1.4 && adx > 2.5 && adx < 10) {
-      this.lastShot = this.sim.frame;
+    if (this.f.def.type === 'shooter' && this.sim.frame > this.nextShot && Math.abs(dy) < 1.4 && adx > 2.5 && adx < 10) {
+      this.nextShot = this.sim.frame + r.int(70, 130);
       const key = r.chance(0.6) ? 'nspec' : 'sspec';
       if (this.reach[key]) { this.execute({ k: key, face: toward }); return; }
     }

@@ -174,6 +174,10 @@ export class Sim {
 
   // ---------- 飛び道具 ----------
   spawnProjectile(f, p, chargeRatio) {
+    // 同じ種類の飛び道具は出せる数に上限がある
+    const LIMIT = { bullet: 3, charge: 1, missile: 2, bomb: 2, boomerang: 1, mine: 1 };
+    const live = this.projectiles.filter((q) => q.owner === f && q.kind === p.kind && !q.dead).length;
+    if (live >= (LIMIT[p.kind] || 2)) return;
     const ratio = clamp(chargeRatio || 0, 0, 1);
     const r = p.rMax ? p.r + (p.rMax - p.r) * ratio : p.r;
     const dmg = p.dmgMax ? p.dmg + (p.dmgMax - p.dmg) * ratio : p.dmg;

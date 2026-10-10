@@ -146,7 +146,7 @@ function shooterMoves(r) {
     ...base,
     nspec: r.pick([
       mv({ name: 'チャージショット', anim: 'shootcharge', total: 34, charge: { at: 8, max: 90, btn: 'b' }, proj: [{ f: 12, kind: 'charge', x: 0.55, y: 0.6, vx: 0.3, r: 0.14, rMax: 0.42, dmg: 4, dmgMax: 26, ang: 361, bkb: 30, kbg: 70, life: 90 }] }),
-      mv({ name: 'れんしゃ', anim: 'shoot', total: 38, proj: [6, 14, 22].map((f) => ({ f, kind: 'bullet', x: 0.55, y: 0.62, vx: 0.45, r: 0.12, dmg: 3, ang: 361, bkb: 12, kbg: 20, life: 38 })) }),
+      mv({ name: 'れんしゃ', anim: 'shoot', total: 38, proj: [6, 14, 22].map((f) => ({ f, kind: 'bullet', x: 0.55, y: 0.62, vx: 0.45, r: 0.12, dmg: 2.4, ang: 361, bkb: 12, kbg: 20, life: 38 })) }),
     ]),
     sspec: r.pick([
       mv({ name: 'ホーミングミサイル', anim: 'missile', total: 46, proj: [{ f: 16, kind: 'missile', x: 0.5, y: 0.65, vx: 0.14, r: 0.18, dmg: 9, ang: 45, bkb: 40, kbg: 72, life: 120, homing: 0.012 }] }),
