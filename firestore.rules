@@ -1,0 +1,43 @@
+rules_version = '2';
+// ラクガキ大乱闘 の Firestore セキュリティルール
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /characters/{id} {
+      allow read: if true;
+
+      // 作成：自分のキャラだけ。初期値は固定。
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.rating == 1500
+        && request.resource.data.battles == 0
+        && request.resource.data.reports == 0
+        && request.resource.data.hidden == false
+        && request.resource.data.type in ['light', 'heavy', 'shooter', 'weapon']
+        && request.resource.data.name is string && request.resource.data.name.size() <= 12
+        && request.resource.data.doodleJson is string && request.resource.data.doodleJson.size() < 300000;
+
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+
+      allow update: if request.auth != null && (
+        // 対戦結果：レートは1回で ±40 まで、対戦数は +1
+        (request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['rating', 'wins', 'losses', 'draws', 'battles', 'updatedAt'])
+          && request.resource.data.battles == resource.data.battles + 1
+          && request.resource.data.rating - resource.data.rating <= 40
+          && resource.data.rating - request.resource.data.rating <= 40)
+        ||
+        // 通報：1人1回（reports/{uid} を同時に作る）、3件で非表示
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reports', 'hidden'])
+          && request.resource.data.reports == resource.data.reports + 1
+          && request.resource.data.hidden == (request.resource.data.reports >= 3)
+          && existsAfter(/databases/$(database)/documents/characters/$(id)/reports/$(request.auth.uid))
+          && !exists(/databases/$(database)/documents/characters/$(id)/reports/$(request.auth.uid)))
+      );
+
+      match /reports/{uid} {
+        allow create: if request.auth != null && request.auth.uid == uid;
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}

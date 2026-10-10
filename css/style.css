@@ -224,3 +224,11 @@ h2 { font-family: var(--hand); font-weight: 400; margin: 8px 0; }
 @media (hover: hover) and (pointer: fine) {
   .touch-ui .stick-zone, .touch-ui .stick-hint { display: none; }
 }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .vs { margin: 6px 0; }
+  .vs-side canvas { width: 64px; height: 80px; }
+  .result h1 { font-size: 24px; margin: 6px 0; }
+  .btn-big { padding: 10px 16px; }
+}
+.step span { white-space: nowrap; font-size: 13px; }

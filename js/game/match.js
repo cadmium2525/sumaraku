@@ -164,6 +164,7 @@ export class Match {
       if (e.t === 'hit') sfx(e.kb > 120 ? 'smash' : e.small ? 'tap' : 'hit', e.kb);
       else if (e.t === 'ko') { sfx('ko'); if (e.final) this.slowmo = 1.2; }
       else if (e.t === 'shield') sfx('shield');
+      else if (e.t === 'perfect') sfx('counter');
       else if (e.t === 'jump') sfx('jump');
       else if (e.t === 'shoot') sfx('shoot');
       else if (e.t === 'explode') sfx('boom');

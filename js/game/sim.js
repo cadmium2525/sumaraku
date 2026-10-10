@@ -90,6 +90,13 @@ export class Sim {
       return 'counter';
     }
     // シールド
+    // ジャストシールド：ガードを出した直後に受けると、削られずにすぐ動ける
+    if (t.state === 'shield' && t.sf <= 5 && !h.grab) {
+      t.hitlag = Math.floor(h.dmg * 0.3 + 3);
+      if (!isProj) a.hitlag = t.hitlag;
+      this.emit({ t: 'perfect', x: t.x, y: t.y + t.h / 2 });
+      return 'shield';
+    }
     if (t.isShielding() && !h.grab && (h.unblockable !== true)) {
       t.shield -= h.dmg * 1.15;
       t.setState('shieldstun');

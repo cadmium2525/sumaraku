@@ -327,6 +327,7 @@ export class Renderer {
         break;
       }
       case 'shield': this.sprite(this.tex.ring, e.x, e.y, 1, 0.2, { grow: 2, color: '#9ad0ff' }); break;
+      case 'perfect': this.sprite(this.tex.star, e.x, e.y, 1.4, 0.3, { grow: 2, color: '#b8f5ff' }); this.sprite(this.tex.ring, e.x, e.y, 1.2, 0.3, { grow: 3, color: '#ffffff' }); break;
       case 'shieldbreak': this.sprite(this.tex.star, e.x, e.y, 3, 0.5, { color: '#ffd166' }); this.shake = 0.5; break;
       case 'counter': this.sprite(this.tex.ring, e.x, e.y, 1.5, 0.35, { grow: 3, color: '#7fffd4' }); break;
       case 'reflect': this.sprite(this.tex.ring, e.x, e.y, 0.8, 0.25, { grow: 3, color: '#7fd3ff' }); break;
@@ -422,7 +423,10 @@ export class Renderer {
 
   dispose() {
     for (const m of this.models) { this.scene.remove(m.root); m.dispose(); }
+    this.scene.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
     this.renderer.dispose();
+    // スマホは WebGL コンテキストの数に上限があるので確実に手放す
+    if (this.renderer.forceContextLoss) this.renderer.forceContextLoss();
   }
 }
 
