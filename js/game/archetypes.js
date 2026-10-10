@@ -197,7 +197,7 @@ function weaponMoves(r, R) {
 }
 
 const TYPE_POWER = { light: 0.95, heavy: 1.25, shooter: 0.9, weapon: 1.0 };
-const DMG_MULT = { light: 1.15, heavy: 0.76, shooter: 1.15, weapon: 1.0 };
+const DMG_MULT = { light: 1.08, heavy: 0.76, shooter: 1.2, weapon: 1.02 };
 
 /** ラクガキの type/seed から対戦用キャラ定義を作る */
 export function buildFighterDef({ type, seed, reach = 1, widthRatio = 0.5, name = '???' }) {

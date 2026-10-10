@@ -21,6 +21,7 @@ export class Fighter {
     this.prevIn = EMPTY_INPUT;
     this.buffer = [];
     this.stats = { dealt: 0, kos: 0, falls: 0 };
+    this.stale = [];
     const sp = STAGE.spawns[slot];
     this.spawnAt(sp.x, sp.y, slot === 0 ? 1 : -1);
   }

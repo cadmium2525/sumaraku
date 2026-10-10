@@ -62,7 +62,7 @@ export class Sim {
         }
         a.hitSet.add(key);
         // 同じグループの他の判定は無効化
-        pending.push({ a, t, h });
+        pending.push({ a, t, h: { ...h, key: a.move.key } });
         break;
       }
     }
@@ -77,6 +77,13 @@ export class Sim {
   /** 攻撃を当てる。戻り値: 'hit' | 'shield' | 'counter' | 'miss' */
   hit(a, t, h, dirX, isProj) {
     if (t.isIntangible()) return 'miss';
+    // ワンパターン相殺：最近当てたワザほど弱くなる
+    if (h.key) {
+      const dmg = +(h.dmg * staleMult(a, h.key)).toFixed(1);
+      a.stale.unshift(h.key);
+      if (a.stale.length > 9) a.stale.pop();
+      h = { ...h, dmg };
+    }
     const m = t.move;
     // カウンター
     if (t.state === 'attack' && m && m.counter && t.mf >= m.counter[0] && t.mf <= m.counter[1]) {
@@ -189,7 +196,7 @@ export class Sim {
     const r = p.rMax ? p.r + (p.rMax - p.r) * ratio : p.r;
     const dmg = p.dmgMax ? p.dmg + (p.dmgMax - p.dmg) * ratio : p.dmg;
     const pr = {
-      id: ++this.projId, owner: f, kind: p.kind,
+      id: ++this.projId, owner: f, kind: p.kind, key: f.move ? f.move.key : undefined,
       x: f.x + p.x * f.h * f.facing, y: f.y + p.y * f.h,
       vx: (p.vx || 0) * f.facing, vy: p.vy || 0,
       r, dmg: +dmg.toFixed(1), ang: p.ang, bkb: p.bkb, kbg: p.kbg,
@@ -273,7 +280,7 @@ export class Sim {
           continue;
         }
         if (p.blast) { this.explode(p); break; }
-        const res = this.hit(owner, t, { dmg: p.dmg, ang: p.ang, bkb: p.bkb, kbg: p.kbg, wx: p.x, wy: p.y }, Math.sign(p.vx) || p.facing, true);
+        const res = this.hit(owner, t, { dmg: p.dmg, ang: p.ang, bkb: p.bkb, kbg: p.kbg, wx: p.x, wy: p.y, key: p.key }, Math.sign(p.vx) || p.facing, true);
         if (res === 'miss') continue;
         p.hits.add(t.slot);
         if (p.kind !== 'boomerang') { p.dead = true; this.emit({ t: 'fizzle', x: p.x, y: p.y }); }
@@ -356,6 +363,15 @@ export class Sim {
       else this.winner = 2;
     }
   }
+}
+
+const STALE_W = [0.08, 0.075, 0.07, 0.065, 0.06, 0.055, 0.05, 0.045, 0.04];
+/** ワンパターン相殺の倍率（使っていないワザは少しだけ強い） */
+export function staleMult(f, key) {
+  let m = 1;
+  let found = false;
+  f.stale.forEach((k, i) => { if (k === key) { m -= STALE_W[i]; found = true; } });
+  return found ? m : 1.05;
 }
 
 export function circleBox(cx, cy, r, b) {
